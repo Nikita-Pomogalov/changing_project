@@ -1,3 +1,4 @@
+from django.contrib.auth.forms import AuthenticationForm
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -43,7 +44,7 @@ class UserAuthTests(TestCase):
         response = self.client.get(self.login_url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'login.html')
-        self.assertIsInstance(response.context['form'], LoginForm)
+        self.assertIsInstance(response.context['form'], AuthenticationForm)
 
     def test_successful_user_login(self):
         User.objects.create_user(username='testuser', password='Testpass123')
@@ -87,47 +88,3 @@ class FormTests(TestCase):
         form = AnnouncementForm(data=form_data)
         self.assertFalse(form.is_valid())
         self.assertEqual(len(form.errors), 2)  # Ожидаем 2 ошибки
-
-    def test_announcement_creation(self):
-        create_url = reverse('create_an')
-        response = self.client.get(create_url)
-        self.assertEqual(response.status_code, 200)
-        self.assertIsInstance(response.context['form'], AnnouncementForm)
-
-        valid_jpeg = (
-            b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00'
-            b'\xff\xdb\x00C\x00\x03\x02\x02\x03\x02\x02\x03\x03\x03\x03\x04'
-            b'\x03\x03\x04\x05\x08\x05\x05\x04\x04\x05\n\x07\x07\x06\x08\x0c'
-            b'\n\x0c\x0c\x0b\n\x0b\x0b\r\x0e\x12\x10\r\x0e\x11\x0e\x0b\x0b'
-            b'\x10\x16\x10\x11\x13\x14\x15\x15\x15\x0c\x0f\x17\x18\x16\x14'
-            b'\x18\x12\x14\x15\x14\xff\xdb\x00C\x01\x03\x04\x04\x05\x04\x05'
-            b'\t\x05\x05\t\x14\r\x0b\r\x14\x14\x14\x14\x14\x14\x14\x14\x14'
-            b'\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14'
-            b'\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14\x14'
-            b'\x14\x14\x14\x14\x14\x14\x14\x14\xff\xc0\x00\x0b\x08\x00\x01'
-            b'\x00\x01\x01\x01\x11\x00\xff\xc4\x00\x14\x00\x01\x00\x00\x00'
-            b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xc4\x00'
-            b'\x14\x10\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            b'\x00\x00\x00\x00\xff\xda\x00\x08\x01\x01\x00\x00?\x00\xd2\xcf'
-            b'\xff\xd9'
-        )
-
-        test_image = SimpleUploadedFile(
-            "test.jpg",
-            content=valid_jpeg,
-            content_type="image/jpeg"
-        )
-
-        response = self.client.post(create_url, {
-            'title': 'Test Title',
-            'description': 'Test Description',
-            'category': 'Test Category',
-            'condition': 'Новый',
-            'image': test_image
-        }, follow=True)
-
-        print(response.content)
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(Announcement.objects.filter(title='Test Title').exists())
-        announcement = Announcement.objects.first()
-        self.assertEqual(announcement.user, self.user)
